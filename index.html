@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Realtime Data Line Graph</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta charset='utf-8' />
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+    body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    #chart {
+      max-width: 600px;
+      max-height: 400px;
+    }
+    </style>
+  </head>
+  <body>
+    <div id="chart"></div>
+    <script src="script.js"></script>
+    <script>
+    var lineArr = [];
+    var MAX_LENGTH = 300;
+    var duration = 1000;
+    var chart = realTimeLineChart();
+
+    function randomNumberBounds(min, max) {
+      return Math.floor(Math.random() * max) + min;
+    }
+
+    // function seedData() {
+    //   var now = new Date();
+    //   for (var i = 0; i < MAX_LENGTH; ++i) {
+    //     lineArr.push({
+    //       time: new Date(now.getTime() - ((MAX_LENGTH - i) * duration)),
+    //       x: randomNumberBounds(0, 10),
+          
+ 
+    //     });
+    //   }
+    // }
+
+     function sleep(milliseconds) {  
+      return new Promise(resolve => setTimeout(resolve, milliseconds));  
+   }
+
+    async function updateData() {
+      var now = new Date();
+
+      
+    
+  
+
+        for (var i=1;i<=5;i++)
+        {
+          lineArr.push({
+                    time: new Date(now.getTime() + i*1000),
+                    x: randomNumberBounds(0, 10)
+          });
+        }
+
+
+      if (lineArr.length > MAX_LENGTH) {
+        lineArr.shift();
+        lineArr.shift();
+        lineArr.shift();
+        lineArr.shift();
+        lineArr.shift();
+      }
+
+
+       console.log(lineArr.length)
+       console.log(lineArr)
+      d3.select("#chart").datum(lineArr).call(chart);
+    }
+
+
+    document.addEventListener("DOMContentLoaded", function() {
+
+      window.setInterval(updateData, 5000);
+     
+
+      d3.select("#chart").datum(lineArr).call(chart);
+
+    });
+    </script>
+</body>
+</html>
