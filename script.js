@@ -134,7 +134,7 @@ function realTimeLineChart() {
       var svg = d3.select(this).selectAll("svg").data([data]);
       var gEnter = svg.enter().append("svg").append("g");
       gEnter.append("g").attr("class", "axis x").transition().duration(5000);
-      gEnter.append("g").attr("class", "axis y").transition().duration(5000);
+      var yAxix= gEnter.append("g").attr("class", "axis y").transition().duration(5000);
       gEnter.append("defs").append("clipPath")
           .attr("id", "clip")
         .append("rect")
@@ -148,18 +148,29 @@ function realTimeLineChart() {
       var g = svg.select("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-      g.select("g.axis.x")
+      var xAxis=g.select("g.axis.x")
         .attr("transform", "translate(0," + (height-margin.bottom-margin.top) + ")")
-        .transition(t)
+        .attr("clip-path", "url(#clip)")
+        // .transition()
         .call(d3.axisBottom(x).ticks(10));
 
       g.select("g.axis.y")
-        .transition()
-        .duration(5000)
+        // .transition()
+        // .duration(5000)
         .attr("class", "axis y")
         .call(d3.axisLeft(y));
 
    
+      brush = d3.brushX()                   
+        .extent( [ [0,0], [width,height] ] ) 
+        .on("end",updateChart)
+
+
+      g.append("g")
+      .attr("class", "brush")
+      .call(brush)
+      .selectAll('rect')
+      .attr('height', height);
 
         gEnter.append("g")
           .attr("class", "lines")
@@ -180,53 +191,158 @@ function realTimeLineChart() {
     
 
         
-          g.append("g").attr("class", "circles").attr("clip-path", "url(#clip)").selectAll(".point")
+          g.selectAll(".point")
     .data(data)
   .enter().append("circle")
+  .attr("clip-path", "url(#clip)")
     .attr("class", "point")
-
-  
-      function tick() {
-
-
-    g.selectAll("g circle.point")
+    .attr("clip-path", "url(#clip)")
+     points = g.selectAll(".point")
     .attr("r", 2)
     
     .attr("stroke","red")
+    // .attr("visibility","hidden")
     .attr("cx", function(d) { return x(d.time) })
     .attr("cy", function(d) { return y(d.x); })
     .call(d3.helper.tooltip());
 
-
+  
+      function tick() {
         d3.select(this)
           .attr("d", function(d) { return line(d.values); })
           .attr("transform", null);
+
+      }
+     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var idleTimeout
+    function idled() { idleTimeout = null; }
+
+
+function updateChart() {
+
+    get_button = d3.select(".clear-button");
+  
+  if(get_button.empty() === true) {
+
+    clear_button= svg.append('text')
+      .attr("y",44)
+      .attr("x", 1132)
+      .attr("display","block")
+      .attr("stroke","black")
+      .attr("cursor","pointer")
+      .attr("class", "clear-button")
+      .text("-");
+
+      clear_circle= svg.append('circle')
+      .attr("r",5)
+      .attr("cy",40)
+      .attr("cx", 1135)
+      .attr("display","block")
+      .attr("fill","none")
+      .attr("stroke","black")
+      .attr("class", "clear-button")
+      .text("-");
+  }
+
+    extent = d3.event.selection;
+
+      if(!extent){
+        if (!idleTimeout) return idleTimeout = setTimeout(idled, 350); 
+        x.domain([ 4,8])
+      }else{
+        x.domain([ x.invert(extent[0]), x.invert(extent[1]) ]);
+         svg.select(".brush").call(brush.move, null); 
+      } 
+       xAxis.transition().call(d3.axisBottom(x));
+   transition_data();
    
 
-        var xMinLess = new Date(new Date(xMax-300000).getTime() - duration);
-        d3.active(this)
-            .attr("transform", "translate(" + x(xMinLess) + ",0)")
-          .transition()
-          .duration(5000)
-            .on("start", tick1);
+   clear_button.on('click', function(){
+    x.domain([0, 50]);
+    transition_data();
+    reset_axis();
+    clear_button.remove();
+  });
 
-      }
-      function tick1() {
- 
-         d3.select("g circle.point")
-          .attr("cx", function(d) {return x(d.value); })
-          .attr("cy",function(d){  return y(d.x);})
-          .attr("transform", null)
-              
+          
+}
+      
 
-        var xMinLess = new Date(new Date(xMax-300000).getTime() - duration);
-        d3.active(".point")
-            .attr("transform", "translate(" + x(xMinLess) + ",0)")
-          .transition()
-          .duration(5000)
-            .on("start", tick);
+    
+function transition_data() {  
 
-      }
+  g.selectAll(".point")
+    .data(data)
+    .transition()
+    .attr("cx",function(d){ return x(d.time)})
+
+    g.selectAll("g path.data")
+        .data(slices)
+        .transition()
+        .attr("d",function(d){ return line(d.values);})
+        ;    
+
+// }
+  g.selectAll(".brush").remove();
+}
+
+function reset_axis() {
+
+temp = d3.extent(data, function(d){ return timeConv(d.date) ;});
+        xScale.domain(temp)
+    xAxis.transition().call(d3.axisBottom().ticks((slices[0].values).length).scale(xScale));
+   
+  svg.selectAll(".point")
+.data(data)
+.transition()
+// .duration(100)
+.attr("cx",function(d){return xScale(timeConv(d.date))});
+
+
+svg.selectAll(".line")
+    .data(slices)
+  .transition()
+    // .duration(100)
+    .attr("d",function(d){ return line(d.values);});
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
        
 
