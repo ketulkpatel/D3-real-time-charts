@@ -9,6 +9,7 @@ d3.helper.tooltip = function(){
       
         selection.on('mouseover.tooltip', function(pD, pI){
             // Clean up lost tooltips
+
             d3.select('body').selectAll('div.tooltip').remove();
             // Append tooltip
             var absoluteMousePos = d3.mouse(bodyNode);  
@@ -72,17 +73,62 @@ d3.helper.tooltip = function(){
 
 
 
+var chart = realTimeLineChart();
+
+    function randomNumberBounds(min, max) {
+      return Math.floor(Math.random() * max) + min;
+    }
+
+    async function updateData() {
+      var now = new Date();
+        for (var i=1;i<=5;i++)
+        {
+          lineArr.push({
+                    time: new Date(now.getTime() + i*1000),
+                    x: randomNumberBounds(0, 10)
+          });
+        }
+
+
+      if (lineArr.length > MAX_LENGTH) {
+        lineArr.shift();
+        lineArr.shift();
+        lineArr.shift();
+        lineArr.shift();
+        lineArr.shift();
+      }
+
+
+       console.log(lineArr.length)
+       console.log(lineArr)
+      d3.select("#chart").datum(lineArr).call(chart);
+    }
+
+
+    document.addEventListener("DOMContentLoaded",  function() {
+
+      // myVar=window.setInterval(updateData, 5000);
+     // updateData();
+     // updateData(); 
+      // d3.select("#chart").datum(lineArr).call(chart);
+
+    });
+
+
+function startUpdate()
+{
+  myVar= window.setInterval(updateData,5000);
+}
+
+
+function stopUpdate()
+{
+  window.clearInterval(myVar);
+}
 
 
 
-
-
-
-
-
-
-
-
+// 
 
 
 
@@ -94,6 +140,7 @@ function realTimeLineChart() {
       width = 1200,
       height = 400,
       duration = 1000;
+
 
   function chart(selection) {
     // Based on https://bl.ocks.org/mbostock/3884955
@@ -140,6 +187,18 @@ function realTimeLineChart() {
         .append("rect")
           .attr("width", width-margin.left-margin.right)
           .attr("height", height-margin.top-margin.bottom);
+
+
+
+
+
+
+
+          
+
+
+
+
       
 
 
@@ -160,24 +219,34 @@ function realTimeLineChart() {
         .attr("class", "axis y")
         .call(d3.axisLeft(y));
 
+
    
       brush = d3.brushX()                   
         .extent( [ [0,0], [width,height] ] ) 
         .on("end",updateChart)
 
-
-      g.append("g")
-      .attr("class", "brush")
-      .call(brush)
-      .selectAll('rect')
-      .attr('height', height);
-
+       
+     
         gEnter.append("g")
           .attr("class", "lines")
           .attr("clip-path", "url(#clip)")
         .selectAll(".data").data(slices).enter()
           .append("path")
             .attr("class", "data");
+
+            gEnter.append("g")
+            .attr("fill","red")
+            .attr("class", "brush")
+            
+
+               g.selectAll(".brush")
+               
+      .call(brush)
+
+      .selectAll('rect')
+      // .attr("cursor","default")
+
+      .attr('height', height);
 
       g.selectAll("g path.data")
         .data(slices)
@@ -188,27 +257,31 @@ function realTimeLineChart() {
         .duration(5000)
         .ease(d3.easeLinear)
         .on("start", tick)
-    
+
 
         
-          g.selectAll(".point")
-    .data(data)
-  .enter().append("circle")
-  .attr("clip-path", "url(#clip)")
-    .attr("class", "point")
-    .attr("clip-path", "url(#clip)")
-     points = g.selectAll(".point")
-    .attr("r", 2)
     
-    .attr("stroke","red")
-    // .attr("visibility","hidden")
-    .attr("cx", function(d) { return x(d.time) })
-    .attr("cy", function(d) { return y(d.x); })
-    .call(d3.helper.tooltip());
+          g.selectAll("circle")
+    .data(data)
+  .enter().append("svg:circle")
+    .attr("class", "points")
+    
+
 
   
-      function tick() {
-        d3.select(this)
+       g.selectAll(".points")
+       .data(data)
+    .attr("r", 2)
+    .attr("stroke","red")
+    .attr("clip-path", "url(#clip)")
+    .attr("cx", function(d) {  return x(d.time) })
+    .attr("cy", function(d) { return y(d.x); })
+    .call(d3.helper.tooltip());
+        
+      
+       function tick(){
+  
+       d3.select(this)
           .attr("d", function(d) { return line(d.values); })
           .attr("transform", null);
 
@@ -229,7 +302,7 @@ function realTimeLineChart() {
 
 
 var idleTimeout
-    function idled() { idleTimeout = null; }
+    function idled() { idleTimeout = null; };
 
 
 function updateChart() {
@@ -254,6 +327,7 @@ function updateChart() {
       .attr("display","block")
       .attr("fill","none")
       .attr("stroke","black")
+      .attr("cursor","pointer")
       .attr("class", "clear-button")
       .text("-");
   }
@@ -265,30 +339,37 @@ function updateChart() {
         x.domain([ 4,8])
       }else{
         x.domain([ x.invert(extent[0]), x.invert(extent[1]) ]);
-         svg.select(".brush").call(brush.move, null); 
+        
+
+         
       } 
        xAxis.transition().call(d3.axisBottom(x));
    transition_data();
-   
 
+   
    clear_button.on('click', function(){
-    x.domain([0, 50]);
+    x.domain([xMax-300000, xMax]);
+   
+    g.selectAll(".brush").call(brush.move, null); 
     transition_data();
-    reset_axis();
+       
     clear_button.remove();
+    clear_circle.remove();
   });
 
           
-}
+};
       
 
     
 function transition_data() {  
 
-  g.selectAll(".point")
+
+
+  g.selectAll(".points")
     .data(data)
     .transition()
-    .attr("cx",function(d){ return x(d.time)})
+    .attr("cx",function(d){  return x(d.time)})
 
     g.selectAll("g path.data")
         .data(slices)
@@ -296,30 +377,24 @@ function transition_data() {
         .attr("d",function(d){ return line(d.values);})
         ;    
 
+
+        // g.selectAll(".brushes").remove();
+  // g.select(".brushes").attr("visibility","hidden");
+
+  // window.setInterval(updateData, 1000);
+}
+
+// function reset_axis() {
+// g.selectAll("g path.data")
+//         .data(slices)
+//         .style("stroke", "blue")
+//         .style("stroke-width", 1)
+//         .style("fill", "none")
+//         .transition()
+//         .duration(5000)
+//         .ease(d3.easeLinear)
+//         .on("start", tick)
 // }
-  g.selectAll(".brush").remove();
-}
-
-function reset_axis() {
-
-temp = d3.extent(data, function(d){ return timeConv(d.date) ;});
-        xScale.domain(temp)
-    xAxis.transition().call(d3.axisBottom().ticks((slices[0].values).length).scale(xScale));
-   
-  svg.selectAll(".point")
-.data(data)
-.transition()
-// .duration(100)
-.attr("cx",function(d){return xScale(timeConv(d.date))});
-
-
-svg.selectAll(".line")
-    .data(slices)
-  .transition()
-    // .duration(100)
-    .attr("d",function(d){ return line(d.values);});
-
-}
 
 
 
